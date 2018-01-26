@@ -18,21 +18,18 @@ if ($options{h})
 
 if ($options{a})
 {
-  add_user();
+  add_user_with_passwd();
 }
 
 if ($options{i}){
-  get_all_uids();
+  generate_passwd_hash();
 
 }
 
 
 
-sub add_user {
+sub add_user_with_passwd {
   my ($username, $uid_xd) = @ARGV;
-
-  my $test = generate_password(5);
-  print "$test\n";
 
   if((not defined $username) or (not defined $uid_xd)) {
     die "Invalid parameters were given\n";
@@ -41,11 +38,14 @@ sub add_user {
   else {
     if(!check_if_user_exists($username)) {
       if(!check_if_uid_exists($uid_xd)) {
-        print "'$username' and '$uid_xd'\n";
-        system("useradd -u $uid_xd $username");
+        my $password_hash_for_user = generate_passwd_hash();
+        system("useradd -u $uid_xd -p $password_hash_for_user $username");
+        print "user created\n";
+        print "username: $username\n";
+        print "uid: $uid_xd\n";
       }
       else {
-        die "Given UID exists!";
+        die "Given UID exists!\n";
       }
     }
 
@@ -82,12 +82,6 @@ sub check_if_uid_exists {
   else { return 0; }
 }
 
-# sub test_ls {
-#   my ($command) = @ARGV;
-#
-#   system($command);
-# }
-
 sub print_help {
   print "POMOC\n";
 }
@@ -105,9 +99,7 @@ sub get_users {
 
 sub get_uid {
     my $uid;
-    #$uid = system("id -u '$_[0]'");
     run [ "id", "-u", "$_[0]" ], ">", \$uid;
-    #print ("DEBUG GETUID: $uid\n");
     return $uid;
 }
 
@@ -123,21 +115,27 @@ sub get_all_uids {
       push @current_uids, $single_uid;
 
   }
-  #print "$current_uids[40]";
+
   return @current_uids;
 }
 
 sub generate_password {
-	my $length_of_random_passwd=shift;# the length of
-			 # the random string to generate
+	my $length_of_random_passwd=shift;
 
 	my @chars=('a'..'z','A'..'Z','0'..'9');
 	my $random_passwd;
 	foreach (1..$length_of_random_passwd)
 	{
-		# rand @chars will generate a random
-		# number between 0 and scalar @chars
+
 		$random_passwd.=$chars[rand @chars];
 	}
 	return $random_passwd;
+}
+
+sub generate_passwd_hash {
+
+  my $password1 = generate_password(6);
+  my $encrypted_passwd = crypt($password1, "1337");
+  print "user_passwd (unencrypted): $password1\n";
+  return $encrypted_passwd;
 }
